@@ -1,0 +1,169 @@
+
+name: flow_matching_tortoisetts
+model: extensibletrainer
+distortion: sr  
+scale: 1
+gpu_ids: [0] # <-- unless you have multiple gpus, use this
+start_step: 0 
+
+grad_scaler_enabled: false 
+fp16: false 
+use_8bit: true
+use_tb_logger: true
+wandb: false  
+
+
+datasets:
+  train:
+    name: TrainDS
+    n_workers: 16 
+    batch_size: 256 
+    mode: paired_voice_audio
+    sample_rate: 22050
+    path: <path to training data>
+    fetcher_mode: ['lovo_csv'] 
+    max_wav_length: 441000
+    max_text_length: 999
+    load_conditioning: true 
+    num_conditioning_candidates: 1 
+    conditioning_length: 102400 
+    needs_collate: false 
+    use_bpe_tokenizer: true
+    load_aligned_codes: false
+    phase: train
+  val:
+    name: TestDS
+    n_workers: 8
+    batch_size: 16 
+    mode: paired_voice_audio
+    sample_rate: 22050
+    path: <path to valiation data>
+    fetcher_mode: ['lovo_csv'] 
+    max_wav_length: 441000 
+    max_text_length: 999 
+    load_conditioning: true
+    num_conditioning_candidates: 1 
+    conditioning_length: 102400 
+    needs_collate: false 
+    use_bpe_tokenizer: true
+    load_aligned_codes: false
+    phase: val
+
+steps:
+  otcfm_train:
+    training: otcfm
+    loss_log_buffer: 2000 
+
+    optimizer: adamw
+    optimizer_params:
+      lr: !!float 1.e-4 
+      triton: false 
+      weight_decay: 0.001
+      beta1: 0.9
+      beta2: 0.999 
+    clip_grad_eps: 4.0 
+
+    injectors:
+      to_mel:
+        type: torch_mel_spectrogram
+        mel_norm_file: ../experiments/clips_mel_norms.pth
+        in: wav
+        out: mel
+      resample_wav:
+        type: audio_resample
+        in: wav
+        out: wav_for_vocoder
+        input_sample_rate: 22050
+        output_sample_rate: 24000
+      tacotron_mel:
+        type: mel_spectrogram
+        mel_fmax: 12000
+        sampling_rate: 24000
+        n_mel_channels: 100
+        do_normalization: true
+        in: wav_for_vocoder
+        out: target_mel
+      resample_cond:
+        type: for_each
+        subtype: audio_resample
+        input_sample_rate: 22050
+        output_sample_rate: 24000
+        in: conditioning
+        out: conditioning_for_vocoder
+      cond_to_mel:
+        type: for_each
+        subtype: mel_spectrogram
+        mel_fmax: 12000
+        sampling_rate: 24000
+        n_mel_channels: 100
+        in: conditioning_for_vocoder
+        out: cond_mel
+      produce_latents:
+        type: gpt_voice_latent
+        gpt_path: ../experiments/autoregressive.pth
+        in: wav
+        conditioning_clip: conditioning
+        text: padded_text
+        text_lengths: text_lengths
+        input_lengths: wav_lengths
+        out: gpt_latent
+      otcfm:
+        type: generator
+        generator: otcfm
+        in: [target_mel, gpt_latent, cond_mel, wav_lengths]
+        out: loss_otcfm
+
+    losses:
+      otcfm_loss:
+        after: 10 
+        type: direct
+        weight: 1
+        key: loss_otcfm
+
+
+networks:
+  otcfm:
+    type: generator 
+    which_model_G: otcfm 
+    kwargs:
+      in_latent_channels: 1024
+      n_hidden: 1024
+      n_mel_channels: 100 
+      n_blocks: 10
+      n_heads: 16
+      p_dropout: 0.1 
+      use_fp16: false
+      layer_drop: 0
+
+path:
+  strict_load: true
+
+train:
+  niter: 500000
+  warmup_iter: -1 
+  warmup_steps: 0
+  mega_batch_factor: 8 
+  val_freq: 5000 
+  sort_key: wav_lengths 
+  auto_collate: true
+
+  default_lr_scheme: MultiStepLR
+  gen_lr_steps: [500000] 
+  lr_gamma: 1 
+  ema_enabled: false
+  manual_seed: 1234
+
+eval:
+  pure: true
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 5000 
+  visuals: [gen, mel] 
+  visual_debug_rate: 99999999 
+  is_mel_spectrogram: true
+  disable_state_saving: false
+
+upgrades:
+  number_of_checkpoints_to_save: 0
+  number_of_states_to_save: 0

@@ -109,7 +109,7 @@ def normalization(channels):
     return GroupNorm32(groups, channels)
 
 
-def timestep_embedding(timesteps, dim, max_period=10000):
+def timestep_embedding(timesteps, dim, max_period=10000, scale=1.0):
     """
     Create sinusoidal timestep embeddings.
 
@@ -124,7 +124,7 @@ def timestep_embedding(timesteps, dim, max_period=10000):
         -math.log(max_period) * th.arange(start=0, end=half, dtype=th.float32) / half
     ).to(device=timesteps.device)
     if len(timesteps.shape) == 1:
-        args = timesteps[:, None].float() * freqs[None]
+        args = scale * timesteps[:, None].float() * freqs[None]
     else:
         args = (timesteps.float() * freqs.view(1,half,1)).permute(0,2,1)
     embedding = th.cat([th.cos(args), th.sin(args)], dim=-1)
