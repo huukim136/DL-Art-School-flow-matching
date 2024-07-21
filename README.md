@@ -1,3 +1,21 @@
+# this repo is a fork from [DL-Art-School repo](https://github.com/152334H/DL-Art-School). I only added Flow matching training code.
+
+Flow Matching model is added in this file [unet_flow_matching.py](https://github.com/huukim136/DL-Art-School-flow-matching/blob/master/codes/models/audio/tts/unet_flow_matching.py)  in which the architecture was mostly inspired by the Unet Diffusion model in the old repo.
+
+The accompanied config file is in [experiments/EXAMPLE_flowmatching.yml](https://github.com/huukim136/DL-Art-School-flow-matching/blob/master/experiments/EXAMPLE_flowmatching.yml). 
+
+Run the below to train flow matching for tortoise tts 
+
+```
+python train.py -opt ../experiments/EXAMPLE_flowmatching.yml
+```
+
+If you want to know more about this training framework. Please read the below!
+
+
+# From here, it is the README of the old repo that this repo was forked from
+---
+
 # this repo is now maintenance only; please develop a fork || use the mrq repo if you have large features to submit
 
 **NOTICE**: this repo is not endorsed by @neonbjb
