@@ -2,6 +2,8 @@
 
 ***Update***: I trained the Flow Matching model with LibriTTS dataset. Visit [this page](https://avocado136.github.io/portfolio/flow_matching_tortoisetts/) to listen to the audio samples.
 
+Flow Matching checkpoint that was trained on LibriTTS is uploaded [here](https://drive.google.com/file/d/1bWIq4XbKKGgU5JoyjpAFvaJ72werIqIq/view?usp=sharing).
+
 Flow Matching model is added in this file [unet_flow_matching.py](https://github.com/huukim136/DL-Art-School-flow-matching/blob/master/codes/models/audio/tts/unet_flow_matching.py)  in which the architecture was mostly inspired by the Unet Diffusion model in the old repo.
 
 The accompanied config file is in [experiments/EXAMPLE_flowmatching.yml](https://github.com/huukim136/DL-Art-School-flow-matching/blob/master/experiments/EXAMPLE_flowmatching.yml). 
